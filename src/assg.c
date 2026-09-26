@@ -18,7 +18,6 @@ int count_schedules(FILE *fp, string schedules[])
 
         schedules[count][end] = '\0';
 
-        /* If a line exceeds 40 characters, discard its remainder. */
         if (!has_newline) {
             int ch = fgetc(fp);
             while (ch != '\n' && ch != EOF) {
@@ -45,7 +44,6 @@ int count_schedules(FILE *fp, string schedules[])
 
         string count_schedule_header; 
         fgets(count_schedule_header, sizeof schedules[i], temp_fp);
-        //printf(count_schedule_header);
 
         fclose(temp_fp);
 
@@ -59,10 +57,8 @@ int count_schedules(FILE *fp, string schedules[])
                 }
             }
         }  
-        //printf("Route num: %d, Schedule: %s, Number of Stops: %d, Direction: %c\n\n", schedule_num, route_ID, num_stops, dir);
         char schedule_str[100];
         sprintf(schedule_str, "is route %d it has %d stops and is in the %c direction", schedule_num, num_stops, dir);
-        //printf("%s\n\n", schedule_str);
         snprintf(schedules[i], sizeof schedules[i], "%s", schedule_str);    }
 
     return count;
@@ -73,7 +69,7 @@ int main(void)
 {
     string schedules[num_schedules];
 
-    FILE *fp = fopen("list_file.txt", "r");
+    FILE *fp = fopen("../list_file.txt", "r");
     if (fp == NULL) {
         printf("Error opening list_file.txt");
         return 1;
@@ -84,7 +80,9 @@ int main(void)
 
     FILE *output_fp = fopen("output.txt", "a");
 
-    //PRINTING SECTION
+
+
+    //PRINTING TO FILE SECTION
     fprintf(output_fp, "Processing %d schedule files. . .\n", count);
     for (int i = 0; i < count; i++) {
         fprintf(output_fp, "schedule #%d %s\n", i + 1, schedules[i]);
