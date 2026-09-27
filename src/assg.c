@@ -65,29 +65,33 @@ int count_schedules(FILE *fp, string schedules[])
 }
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
     string schedules[num_schedules];
 
-    FILE *fp = fopen("../list_file.txt", "r");
+    if (argc > 1) {
+        printf("Usage: %s %s\n", argv[0], argv[1]);
+    }
+    else{
+        printf("no argv[1] Usage: %s\n", argv[0]);
+    }
+
+    FILE *fp = fopen(argv[1], "r");
     if (fp == NULL) {
-        printf("Error opening list_file.txt");
+        printf("Error opening list file\n");
         return 1;
     }
 
     int count = count_schedules(fp, schedules);
     fclose(fp);
 
-    FILE *output_fp = fopen("output.txt", "a");
-
 
 
     //PRINTING TO FILE SECTION
-    fprintf(output_fp, "Processing %d schedule files. . .\n", count);
+    fprintf(stdout, "Processing %d schedule files. . .\n", count);
     for (int i = 0; i < count; i++) {
-        fprintf(output_fp, "schedule #%d %s\n", i + 1, schedules[i]);
+        fprintf(stdout, "schedule #%d %s\n", i + 1, schedules[i]);
     }
-    fclose(output_fp);
 
 
     return 0;
