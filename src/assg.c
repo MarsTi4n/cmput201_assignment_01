@@ -5,6 +5,39 @@
 #define num_schedules 221
 
 typedef char string[max_str_len + 1];
+int count_schedules(FILE *fp, string schedules[]);
+
+int main(int argc, char *argv[])
+{
+    string schedules[num_schedules];
+
+    if (argc > 1) {
+        printf("Usage: %s %s\n", argv[0], argv[1]);
+    }
+    else{
+        printf("no argv[1] Usage: %s\n", argv[0]);
+    }
+
+    FILE *fp = fopen(argv[1], "r");
+    if (fp == NULL) {
+        printf("Error opening list file\n");
+        return 1;
+    }
+
+    int count = count_schedules(fp, schedules);
+    fclose(fp);
+
+
+
+    //PRINTING TO FILE SECTION
+    fprintf(stdout, "Processing %d schedule files. . .\n", count);
+    for (int i = 0; i < count; i++) {
+        fprintf(stdout, "schedule #%d %s\n", i + 1, schedules[i]);
+    }
+
+
+    return 0;
+}
 
 
 int count_schedules(FILE *fp, string schedules[])
@@ -62,37 +95,4 @@ int count_schedules(FILE *fp, string schedules[])
         snprintf(schedules[i], sizeof schedules[i], "%s", schedule_str);    }
 
     return count;
-}
-
-
-int main(int argc, char *argv[])
-{
-    string schedules[num_schedules];
-
-    if (argc > 1) {
-        printf("Usage: %s %s\n", argv[0], argv[1]);
-    }
-    else{
-        printf("no argv[1] Usage: %s\n", argv[0]);
-    }
-
-    FILE *fp = fopen(argv[1], "r");
-    if (fp == NULL) {
-        printf("Error opening list file\n");
-        return 1;
-    }
-
-    int count = count_schedules(fp, schedules);
-    fclose(fp);
-
-
-
-    //PRINTING TO FILE SECTION
-    fprintf(stdout, "Processing %d schedule files. . .\n", count);
-    for (int i = 0; i < count; i++) {
-        fprintf(stdout, "schedule #%d %s\n", i + 1, schedules[i]);
-    }
-
-
-    return 0;
 }
