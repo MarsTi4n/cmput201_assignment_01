@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define max_str_len 100
@@ -138,10 +137,12 @@ int schedule_has_stops(const char path[], const char first_stop[], const char se
     return found_first && found_second;
 }
 
-char *find_stop_name(const char location[], FILE *list_file) {
+void find_stop_name(const char location[], FILE *list_file, char result[],
+                    size_t result_size) {
     char schedule_path[256];
     char line[512];
 
+    snprintf(result, result_size, "Unknown");
     rewind(list_file);
     while (fgets(schedule_path, sizeof schedule_path, list_file) != NULL) {
         FILE *schedule;
@@ -154,7 +155,6 @@ char *find_stop_name(const char location[], FILE *list_file) {
 
         while (fgets(line, sizeof line, schedule) != NULL) {
             char *separator;
-            size_t name_length;
 
             line[strcspn(line, "\r\n")] = '\0';
             separator = strchr(line, ',');
@@ -167,14 +167,10 @@ char *find_stop_name(const char location[], FILE *list_file) {
                 while (*name == ' ' || *name == '\t') {
                     name++;
                 }
-                name_length = strlen(name);
-                char *result = malloc(name_length + 1);
-                if (result != NULL) {
-                    memcpy(result, name, name_length + 1);
-                }
+                snprintf(result, result_size, "%s", name);
                 fclose(schedule);
                 rewind(list_file);
-                return result;
+                return;
             }
         }
 
@@ -182,7 +178,6 @@ char *find_stop_name(const char location[], FILE *list_file) {
     }
 
     rewind(list_file);
-    return NULL;
 }
 
 char *get_duration(Entry start, Entry exit) {
@@ -215,20 +210,15 @@ void routes_matching(Entry entries[], int num_entries, FILE *list_file, FILE *ou
         schedule_count++;
     }
 
-    size_t route_capacity = (size_t)(schedule_count > 0 ? schedule_count : 1);
-    char (*valid_schedules)[256] = malloc(route_capacity * sizeof *valid_schedules);
     size_t trip_count = (size_t)num_entries / 2;
-    char (*selected_schedules)[256] = calloc(trip_count > 0 ? trip_count : 1,
-                                               sizeof *selected_schedules);
-    char (*guessed_locations)[max_str_len + 1] = calloc(
-        trip_count > 0 ? trip_count : 1, sizeof *guessed_locations);
-    if (valid_schedules == NULL || selected_schedules == NULL ||
-        guessed_locations == NULL) {
-        free(valid_schedules);
-        free(selected_schedules);
-        free(guessed_locations);
-        fprintf(output, "Unable to allocate route storage\n");
-        return;
+    size_t route_capacity = (size_t)(schedule_count > 0 ? schedule_count : 1);
+    size_t trip_capacity = trip_count > 0 ? trip_count : 1;
+    char valid_schedules[route_capacity][256];
+    char selected_schedules[trip_capacity][256];
+    char guessed_locations[trip_capacity][max_str_len + 1];
+    for (size_t i = 0; i < trip_capacity; i++) {
+        selected_schedules[i][0] = '\0';
+        guessed_locations[i][0] = '\0';
     }
 
     for (int i = num_entries-1; i > 0; i-=2) {
@@ -272,13 +262,15 @@ void routes_matching(Entry entries[], int num_entries, FILE *list_file, FILE *ou
 
             if (matching_route_count > 1) {
                 printf("Ambiguous trip detected\n");
-                char *entry_name = find_stop_name(entries[i].location, list_file);
-                char *exit_name = find_stop_name(exit_location, list_file);
+                  char entry_name[512];
+                  char exit_name[512];
+                  find_stop_name(entries[i].location, list_file, entry_name,
+                           sizeof entry_name);
+                  find_stop_name(exit_location, list_file, exit_name,
+                           sizeof exit_name);
                 printf("Entry: %s (%s)\nExit: %s (%s)\n",
                        entries[i].location, entry_name,
                        entries[i-1].location, exit_name);
-                free(entry_name);
-                free(exit_name);
                 printf("Possible schedules:\n");
                 for (int j = 0; j < matching_route_count; j++) {
                     char route_number[100];
@@ -321,10 +313,13 @@ void routes_matching(Entry entries[], int num_entries, FILE *list_file, FILE *ou
         if (sscanf(filename, "route_%99[^_]_%1[^.].txt", route_number,
                    route_direction) == 2) {
             char *duration = get_duration(entries[entry_index], entries[entry_index - 1]);
-            char *start_stop = find_stop_name(entries[entry_index].location, list_file);
+            char start_stop[512];
+            find_stop_name(entries[entry_index].location, list_file, start_stop,
+                           sizeof start_stop);
             const char *end_location = entries[entry_index - 1].type[0] == 'M'
                 ? guessed_locations[i] : entries[entry_index - 1].location;
-            char *end_stop = find_stop_name(end_location, list_file);
+            char end_stop[512];
+            find_stop_name(end_location, list_file, end_stop, sizeof end_stop);
             fprintf(output, "%s %s,%s,%s,%sT%s,%sT%s,%s%s\n",
                     route_number, route_direction,
                     start_stop,end_stop,
@@ -333,14 +328,8 @@ void routes_matching(Entry entries[], int num_entries, FILE *list_file, FILE *ou
                     entries[entry_index - 1].time,
                     duration,
                     entries[entry_index - 1].type[0] == 'M' ? ",Guessed" : "");
-            free(start_stop);
-            free(end_stop);
         }
     }
-
-    free(valid_schedules);
-    free(selected_schedules);
-    free(guessed_locations);
 }
 
 int main(int argc, char *argv[])
@@ -379,9 +368,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-
-
-    //PRINTING TO FILE SECTION
 
     routes_matching(entries, num_entries, fp, output);
 
